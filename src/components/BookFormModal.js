@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { BookContext } from '../context/BookContext';
 import { GENRES, STATUSES } from '../constants';
@@ -6,14 +6,50 @@ import { GENRES, STATUSES } from '../constants';
 const BookFormModal = () => {
   const { isModalOpen, setIsModalOpen, selectedBook, handleAddBook, handleUpdateBook } = useContext(BookContext);
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
-    defaultValues: selectedBook || { title: '', author: '', genre: '', publishedYear: '', status: 'Available' }
+    defaultValues: {
+      title: '',
+      author: '',
+      genre: '',
+      publishedYear: '',
+      status: 'Available',
+    },
   });
 
-  const onSubmit = (data) => {
+  // Reset form with selectedBook values when it changes
+  useEffect(() => {
     if (selectedBook) {
-      handleUpdateBook(selectedBook._id, data);
+      reset({
+        title: selectedBook.title || '',
+        author: selectedBook.author || '',
+        genre: selectedBook.genre || '',
+        publishedYear: selectedBook.publishedYear || '',
+        status: selectedBook.status || 'Available',
+      });
     } else {
-      handleAddBook(data);
+      reset({
+        title: '',
+        author: '',
+        genre: '',
+        publishedYear: '',
+        status: 'Available',
+      });
+    }
+  }, [selectedBook, reset]);
+
+  const onSubmit = (data) => {
+    // Ensure all fields are strings and valid
+    const sanitizedData = {
+      title: data.title || '',
+      author: data.author || '',
+      genre: data.genre || '',
+      publishedYear: data.publishedYear ? parseInt(data.publishedYear, 10) : '',
+      status: data.status || 'Available',
+    };
+
+    if (selectedBook) {
+      handleUpdateBook(selectedBook._id, sanitizedData);
+    } else {
+      handleAddBook(sanitizedData);
     }
     reset();
     setIsModalOpen(false);
@@ -61,7 +97,7 @@ const BookFormModal = () => {
               {...register('publishedYear', {
                 required: 'Published Year is required',
                 min: { value: 1800, message: 'Year must be after 1800' },
-                max: { value: new Date().getFullYear(), message: 'Year cannot be in the future' }
+                max: { value: new Date().getFullYear(), message: 'Year cannot be in the future' },
               })}
               className="w-full p-2 border rounded"
             />
